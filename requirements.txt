@@ -12,3 +12,4 @@ rospy==1.16.0
 scikit_learn==1.4.0
 scipy==1.12.0
 sensor_msgs==1.13.1
+bagpy==0.4.6

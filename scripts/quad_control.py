@@ -15,12 +15,22 @@ class Controller:
     Ixx = 16.83*10**-3
     Iyy = 16.83*10**-3
     Izz = 28.34*10**-3
+    Ir  = 5*10**-5
+    I1 = (Iyy-Izz)/Ixx
+    I2 = (Izz-Ixx)/Iyy
+    I3 = (Ixx-Iyy)/Izz
+    
     #Mass and Gravity
     M, G = 1.03, 9.82
 
     KT = 1.435*10**-5
     KD = 2.4086*10**-7
     L = 0.26
+    # Output Matrix
+    C = np.eye(6)
+    #Matrices Q and R
+    Qo = np.diag([1, 1, 1, 1, 1, 1])*3.0
+    Ro = np.diag([1, 1, 1])*2.0
     
     def __init__(self):
 
@@ -31,6 +41,7 @@ class Controller:
         self.ang_ant_des = np.zeros((3,1))
         self.theta_des_ant = np.zeros((3,1))
         self.i_error = np.zeros((3,1))
+        #self.wd = 0 #condição inicial
 
     def f2w(self,f,m):
         """""
@@ -62,19 +73,24 @@ class Controller:
          w = T^(-1)*u         
         """
 
-        w = np.linalg.solve(T, u) # T*w = u 
+        w = np.linalg.solve(T, u) # T*w = u
         
-        w_1 = np.sqrt(np.abs(w[0]))*(-1)*2*np.pi/60 # rad/seg to RPM e sentido do giro
-        w_2 = np.sqrt(np.abs(w[1]))*2*np.pi/60      # rad/seg to RPM
-        w_3 = np.sqrt(np.abs(w[2]))*(-1)*2*np.pi/60 # rad/seg to RPM e sentido do giro    
-        w_4 = np.sqrt(np.abs(w[3]))*2*np.pi/60      # rad/seg to RPM
+        w1_rad = np.sqrt(np.abs(w[0]))
+        w2_rad = np.sqrt(np.abs(w[1]))
+        w3_rad = np.sqrt(np.abs(w[2]))
+        w4_rad = np.sqrt(np.abs(w[3]))
+        
+        w_1 = w1_rad*(-1)*2*np.pi/60 # rad/seg to RPM e sentido do giro
+        w_2 = w2_rad*2*np.pi/60      # rad/seg to RPM
+        w_3 = w3_rad*(-1)*2*np.pi/60 # rad/seg to RPM e sentido do giro    
+        w_4 = w4_rad*2*np.pi/60      # rad/seg to RPM
             
         """
         w é o vetor das velocidades angulares dos motores
         """
         
         W = np.array([[w_1,w_2,w_3,w_4]]).T
-                
+        wd = - w1_rad + w2_rad - w3_rad + w4_rad
         """
         Não está sendo utilizado clipping. 
         Isto é, não está sendo verificado o máximo esforço requerido.
@@ -88,7 +104,7 @@ class Controller:
         """
         F_new = 0
         M_new = 0
-        return W, F_new, M_new
+        return W, F_new, M_new, wd
     
     def pos_control_PD(self, pos_atual, pos_des, vel_atual, vel_des, accel_des, psi):
 
@@ -276,7 +292,7 @@ class Controller:
 
         return tau, error    
 
-    def att_control_LQR(self, euler_atual, euler_desejado, ang_vel_atual, freq):
+    def att_control_LQR(self, euler_atual, euler_desejado, ang_vel_atual, freq,wd):
         '''
         Function that computes the desired torques for quadrotor based on
         desired Euler angles and angular velocities.
@@ -305,16 +321,115 @@ class Controller:
         A[0,3] = 1
         A[1,4] = 1
         A[2,5] = 1
+        A[4,5] = -(self.Ir/self.Ixx)*wd
+        A[5,4] = -(self.Ir/self.Iyy)*wd
         B = np.zeros((6,3))
         B[3,0] = 1/self.Ixx
         B[4,1] = 1/self.Iyy
         B[5,2] = 1/self.Izz
-        Q = np.diag([1, 1, 1, 1, 1, 1])*50.0
-        R = np.diag([1, 1, 1])*50.0
+        Q = np.diag([1, 1, 1, 1, 1, 1])*5.0
+        R = np.diag([1, 1, 1])*5.0
         P = solve_lqr(A, B, Q, R)
         K = inv(R)@B.T@P
         u = -K@error
         self.ang_ant_des = euler_desejado
+        #self.wd = wd
+        return np.array(u).reshape((3,1)), np.array(error).reshape((6,1))
+    
+    def att_control_SDRE(self, euler_atual, euler_desejado, ang_vel_atual, freq,wd):
+        '''
+        Function that computes the desired torques for quadrotor based on
+        desired Euler angles and angular velocities.
+        The vector state is x = [phi, theta, psi, p, q, r]
+        '''
+        x = np.array([[euler_atual[0],
+                       euler_atual[1],
+                       euler_atual[2],
+                       ang_vel_atual[0],
+                       ang_vel_atual[1],
+                       ang_vel_atual[2]]]).T
+
+        # TODO Implementar filtro PB para essa derivada.
+        vel_ang_desejada = (euler_desejado - self.ang_ant_des)*freq
+        
+        x_des = np.array([[euler_desejado[0],
+                           euler_desejado[1],
+                           euler_desejado[2],
+                           vel_ang_desejada[0],
+                           vel_ang_desejada[1],
+                           vel_ang_desejada[2]]]).T
+        error = np.array([x- x_des]).reshape((6,1))
+        x = x.reshape((6,1))
+        x_des = x_des.reshape((6,1))
+        
+        #Parâmetros que serão utilizados
+        Jr = self.Ir; L = self.L
+        Ixx = self.Ixx; Iyy = self.Iyy; Izz = self.Izz
+        I1 = (Iyy-Izz)/Ixx;  I2 = (Izz-Ixx)/Iyy;  I3 = (Ixx-Iyy)/Izz
+        Qo = self.Qo; Ro = self.Ro; C = self.C
+        
+        
+        #Passo 1 - Atualizando os termos das matrizes subótimas
+        Sphi = np.sin(euler_atual[0]); Cphi = np.cos(euler_atual[0])
+        Stheta = np.sin(euler_atual[1]); Ctheta = np.cos(euler_atual[1]); Ttheta = np.tan(euler_atual[1])
+        
+        #coeficientes
+        a1 = Ttheta*(1-(Sphi**2)*I2 + (Cphi**2)*I3)
+        a2 = Stheta*Sphi*Cphi*(I2+I3)
+        a3 = 1/Ctheta + Ctheta*(Cphi**2 - Sphi**2)*I1 + Stheta*(Sphi**2)*Ttheta*I2 - Stheta*(Cphi**2)*Ttheta*I3
+        a4 = -Sphi*Cphi*I1
+        a5 = Sphi*Cphi*((Ctheta**2)*I1-(Stheta**2)*(I2+I3))
+        a6 = -Sphi*Cphi*(I3+I2); a7 = Ctheta*(-1 + (Cphi**2)*I2 - (Sphi**2)*I3)
+        a8 = Stheta*Sphi*Cphi*(I2+I3)
+        a9 = -Stheta*Ctheta*((Cphi**2)*I2-(Sphi**2)*I3)
+        a10 = (1/Ctheta)*(1 -(Sphi**2)*I2 + (Cphi**2)*I3)
+        a11 = Sphi*Cphi*(I2+I3); a12 = Ttheta*(1+(Sphi**2)*I2-(Cphi**2)*I3)
+        a13 = -Stheta*Sphi*Cphi*(I2+I3)
+        b1 = L/Ixx; b2 = (L*Ttheta*Sphi)/Iyy; b3 = (L*Ttheta*Cphi)/Izz
+        b4 = (L*Cphi)/Iyy; b5 = -(L*Sphi)/Izz; b6 = (L*Sphi)/(Ctheta*Iyy)
+        b7 = (L*Cphi)/(Ctheta*Izz)
+        c1 = -(Cphi*Jr*wd)/Ixx; c2 = -((Ctheta*Sphi/Ixx)+(Ttheta*Stheta*Sphi/Iyy))*Jr*wd
+        c3 = (Ttheta*Sphi*Jr*wd)/Iyy
+        c4 = -(Stheta*Cphi*Jr*wd)/Iyy
+        c5 = (Cphi*Jr*wd)/Iyy
+        c6 = -(Stheta*Sphi*Jr*wd)/(Ctheta*Iyy)
+        c7 = (Sphi*Jr*wd)/(Ctheta*Iyy)
+        A88 = a1*x[4]+ a2*x[5] +c3
+        A810 = a4*x[4] + c1
+        A812 = a3*x[4] + a5*x[5] + c2
+        A108 = a6*x[4]+ a7*x[5] +c5
+        A1010 = a8*x[5]
+        A1012 = a9*x[5] + c4
+        A128 = a10*x[4]+ a11*x[5] +c7
+        A1210 = a12*x[5]
+        A1212 = a13*x[5] + c6
+        # Matriz Ao
+        Ao = np.zeros((6,6))
+        Ao[0,3]= 1; Ao[1,4]= 1; Ao[2,5]= 1
+        Ao[3,3]= A88; Ao[3,4]= A810; Ao[3,5]= A812
+        Ao[4,3]= A108; Ao[4,4]= A1010; Ao[4,5]= A1012
+        Ao[5,3]= A128; Ao[5,4]= A1210; Ao[5,5]= A1212
+        # Matriz Bo
+        Bo = np.zeros((6,3))
+        Bo[3,0]=b1; Bo[3,1]= b2; Bo[3,2]=b3
+        Bo[4,1]=b4; Bo[4,2]= b5
+        Bo[5,1]=b6; Bo[5,2]= b7
+        
+        # Passo 2 - Com as matrizes Q e R redefinir as matrizes E(x), V(x) e W(x)
+        E = Bo@inv(Ro)@np.transpose(Bo)
+        V = np.transpose(C)@Qo@C
+        W = np.transpose(C)@Qo
+        # Passo 3 - Resolver a Eq. Algébrica de Ricatti
+        P = solve_lqr(Ao, Bo, Qo, Ro)
+        # Passo 4 - Ganhos K(x) e Kz(x)
+        K = inv(Ro)@np.transpose(Bo)@P
+        Kz =inv(Ro)@np.transpose(Bo)@inv(P@E-np.transpose(Ao))@W; # Tem que arrumar aqui
+        # Passo 5 - Sinal de controle Final
+        u = -K@x + Kz@x_des
+        M2 = u[0]
+        M3 = u[1]
+        M4 = u[2]
+        
         return np.array(u).reshape((3,1)), np.array(error).reshape((6,1))
     
     #################################### TRAJECTORY PLANNER FUNCTIONS ######################################################

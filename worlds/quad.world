@@ -10,7 +10,7 @@
 				setar o real_time_update_rate a 250 para computador com 4 cores.
 				setar o real_time_update_rate a 500 para computador com mais cores.
 			-->
-			<real_time_update_rate>500</real_time_update_rate>
+			<real_time_update_rate>250</real_time_update_rate>
 			<ode>
 				<constraints>
 					<contact_max_correcting_vel>10000.0</contact_max_correcting_vel>

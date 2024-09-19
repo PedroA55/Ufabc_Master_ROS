@@ -245,8 +245,8 @@ def controller_node():
     ############################# TRAJECTORY PLANNER ###############################################
 
     #Import the desired trajectory computed by 'trajectory_generator.py' executable.    
-    infile = open(mydir + '/'+'data/trajectory_3.p', 'rb')    
-    #infile = open(mydir + '/'+'data/trajectory_2.p', 'rb')
+    #infile = open(mydir + '/'+'data/trajectory_3.p', 'rb')    
+    infile = open(mydir + '/'+'data/trajectory_2.p', 'rb')
     traj = pickle.load(infile)
     infile.close()
 

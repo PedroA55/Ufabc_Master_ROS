@@ -5,7 +5,7 @@ import numpy as np
 #from quad_ros import quad_robot
 from quat_utils import QuatProd, Quat2Euler
 from quad_control import Controller
-#from std_msgs.msg import Bool, Float32
+from std_msgs.msg import Float32
 from geometry_msgs.msg import Quaternion, Vector3, Pose, Vector3Stamped, PoseStamped
 from quad_ufabc.msg import\
     CartesianPointStamped, Pose, Velocity, Accel, Point,\
@@ -28,7 +28,7 @@ class Attitude_Control(Controller):
     Nesta versão implemento o método 'COLOCAR AQUI O MÉTODO',
     Entradas: 
         - COLOCAR AQUI AS ENTRADAS DO MÉTODO. 
-    Salidas:
+    Sadas:
         - COLOCAR AQUI AS SAÍDAS
     """    
     def __init__(self, freq, controller='Quat'):
@@ -45,6 +45,7 @@ class Attitude_Control(Controller):
         self.att_control_output = AttitudeControllerOutputStamped()
         self.att_control_error = AttitudeControllerErrorStamped()
         self.vel_angular_atual = Vector3()
+        self.quad_wd = 0.0 # Deixa em tipo aberto na declaração
         
         # Subscrição tópico de atitude
         sub_att_name = '/quad/kf/attitude'
@@ -68,6 +69,12 @@ class Attitude_Control(Controller):
         self.pos_cont_out = rospy.Subscriber(sub_pos_cont_out,\
             PositionControllerOutputStamped,\
                 self.callback_pos_control_out)
+        
+        #Subscrição tópico ' diferencial de rotação dos motores - wd '
+        sub_quad_omega_d = '/quad/control/omega_d_output'
+        self.quad_omega_d = rospy.Subscriber(sub_quad_omega_d,\
+            Float32,\
+                self.callback_omega_d)
         
         # Publicações
         pub_att_cont_out = '/quad/control/attitude_controller_output'
@@ -96,6 +103,9 @@ class Attitude_Control(Controller):
     
     def callback_vel_ang(self, data):
         self.vel_angular_atual = data
+    
+    def callback_omega_d(self, data):
+        self.quad_wd = data.data
         
     def callback_pos_control_out(self, data):
         self.pos_control_output = data
@@ -126,7 +136,13 @@ class Attitude_Control(Controller):
                 self.euler_to_np_array(self.orientation_atual_euler),
                 self.euler_to_np_array(self.attitude_error_euler),
                 self.point_to_np_array(self.vel_angular_atual),
-                self.freq)
+                self.freq, self.quad_wd)
+        elif self.controller == 'SDRE':
+            tau, error = self.att_control_SDRE(
+                self.euler_to_np_array(self.orientation_atual_euler),
+                self.euler_to_np_array(self.attitude_error_euler),
+                self.point_to_np_array(self.vel_angular_atual),
+                self.freq, self.quad_wd)    
         else:
             tau, error = self.att_control_PD(
                 self.euler_to_np_array(self.orientation_atual_euler),
@@ -157,7 +173,7 @@ if __name__ == '__main__':
         rospy.init_node(node_name)
         freq = 100              # update frequency
         rate = rospy.Rate(freq) # 100Hz
-        Attitude_Control(freq, controller='LQR')        
+        Attitude_Control(freq, controller='PD')        
         rate.sleep()
         rospy.spin()
     except rospy.ROSInterruptException:
