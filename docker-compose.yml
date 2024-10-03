@@ -25,7 +25,7 @@ services:
       test: ["CMD-SHELL", "test -e /tmp/.X11-unix/X0"]
       interval: "1s"
       retries: 20
-    restart: no
+    restart: "no"
     container_name: xserver  # Add this line to allow named volume removal
     #command: /bin/sh -c "trap 'exit 0' SIGTERM; tail -f /dev/null"  # Gracefully handle termination signals 
   simulator:
@@ -67,7 +67,7 @@ services:
     depends_on:
       - xserver
       - simulator
-    restart: no
+    restart: "no"
     container_name: workspace
     #command: /bin/sh -c "code-server /home/catkin_ws/src/quad_ufabc --bind-addr 0.0.0.0:8080 --auth none"
     command: tail -f /dev/null
