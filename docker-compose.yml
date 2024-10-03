@@ -71,5 +71,5 @@ services:
     container_name: workspace
     #command: /bin/sh -c "code-server /home/catkin_ws/src/quad_ufabc --bind-addr 0.0.0.0:8080 --auth none"
     command: tail -f /dev/null
-  volumes:
-    workspace:
+volumes:
+  workspace:
