@@ -1,19 +1,22 @@
+version: '2.2'
+
 services:
-  #  code-server:
-  #    image: codercom/code-server:4.16.1-ubuntu
-  #    container_name: code-server
-  #    environment:
-  #      - DOCKER_USER=$USER
-  #      - PASSWORD=123456 #Replace this with your login password
-  #    volumes_from:
-  #      - workspace
-  #    volumes:
-  #      - ./config:/config
-  #      - $PWD:/home/coder/workspace
-  #      #- $PWD:/home/catkin_ws/src/quad_ufabc
-  #    ports:
-  #      - 8080:8080
-  #    restart: unless-stopped
+
+#  code-server:
+#    image: codercom/code-server:4.16.1-ubuntu
+#    container_name: code-server
+#    environment:
+#      - DOCKER_USER=$USER
+#      - PASSWORD=123456 #Replace this with your login password
+#    volumes_from:
+#      - workspace
+#    volumes:
+#      - ./config:/config
+#      - $PWD:/home/coder/workspace
+#      #- $PWD:/home/catkin_ws/src/quad_ufabc
+#    ports:
+#      - 8080:8080
+#    restart: unless-stopped
   xserver:
     image: devrt/xserver
     ipc: host
@@ -57,6 +60,7 @@ services:
     volumes:
       - workspace:/workspace
       - ./:/home/catkin_ws/src/quad_ufabc  # Mount local folder to /src in the container
+    #- /tmp/.X11-unix:/tmp/.X11-unix # Sugestao ChatGPT
       #command: /bin/sh -c "trap 'exit 0' SIGTERM; tail -f /dev/null"
     environment:
       - DISPLAY=:0
@@ -73,3 +77,4 @@ services:
     command: tail -f /dev/null
 volumes:
   workspace:
+    #driver: local #sugestao ChatGPT

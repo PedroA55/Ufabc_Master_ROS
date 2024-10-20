@@ -173,7 +173,7 @@ if __name__ == '__main__':
         rospy.init_node(node_name)
         freq = 100              # update frequency
         rate = rospy.Rate(freq) # 100Hz
-        Attitude_Control(freq, controller='PD')        
+        Attitude_Control(freq, controller='LQR')        
         rate.sleep()
         rospy.spin()
     except rospy.ROSInterruptException:

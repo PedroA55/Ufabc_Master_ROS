@@ -126,7 +126,7 @@ plt.grid()
 plt.xlabel('tempo')
 
 #
-plt.show()
+#plt.show()
 
 # tópico "atitude em euler" -> pandas database
 actual_ati_euler = b.message_by_topic(topic='/quad/kf/euler')
@@ -174,7 +174,7 @@ plt.plot(actual_ati_euler_df['Time'].to_numpy(), actual_ati_euler_df['psi'].to_n
 plt.legend(['$\psi$t) desejado','$\psi$(t) comando','$\psi$(t) real'])
 plt.grid()
 plt.xlabel('tempo')
-plt.show()
+#plt.show()
 
 # saída do controle de posição e velocidade
 #pos_control_output = b.message_by_topic(topic='/quad/control/position_controller_output')
@@ -217,7 +217,7 @@ plt.plot(pos_control_output_df['Time'].to_numpy(), pos_control_output_df['positi
 plt.grid()
 plt.legend(['quaternion.z'])
 #
-plt.show()
+#plt.show()
 
 # gráficos da saída de controle de posição e velocidade.
 # Empuxo total e atitude em ângulos de Euler
@@ -257,7 +257,7 @@ plt.plot(pos_control_output_df['Time'].to_numpy(),\
 plt.grid()
 plt.legend(['$\psi$'])
 #
-plt.show()
+#plt.show()
 
 # saída do controle de atitude
 att_control_output = b.message_by_topic(topic='/quad/control/attitude_controller_output')
@@ -296,13 +296,13 @@ frame4.axes.xaxis.set_ticklabels([])
 plt.show()
 #
 # create html for both graphs 
-html1 = mpld3.fig_to_html(fig1)
-html2 = mpld3.fig_to_html(fig2)
-html3 = mpld3.fig_to_html(fig3)
-html4 = mpld3.fig_to_html(fig4)
-html5 = mpld3.fig_to_html(fig5)
-html6 = mpld3.fig_to_html(fig6)
-html7 = mpld3.fig_to_html(fig7)
+#html1 = mpld3.fig_to_html(fig1)
+#html2 = mpld3.fig_to_html(fig2)
+#html3 = mpld3.fig_to_html(fig3)
+#html4 = mpld3.fig_to_html(fig4)
+#html5 = mpld3.fig_to_html(fig5)
+#html6 = mpld3.fig_to_html(fig6)
+#html7 = mpld3.fig_to_html(fig7)
 
 # serve joined html to browser
-serve(html1+html2+html3+html4+html5+html6+html7)
+#serve(html1+html2+html3+html4+html5+html6+html7)

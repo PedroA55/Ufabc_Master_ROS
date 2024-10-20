@@ -57,8 +57,8 @@ if __name__ == '__main__':
         node_name = 'quadrotor_node_2'
         rospy.init_node(node_name)
         Quadrotor()        
-        #rate = rospy.Rate(100) 
-        #rate.sleep()
+        rate = rospy.Rate(100) 
+        rate.sleep()
         rospy.spin() 
     except rospy.ROSInterruptException:
         pass    
