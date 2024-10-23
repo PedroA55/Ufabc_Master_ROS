@@ -29,8 +29,8 @@ class Controller:
     # Output Matrix
     C = np.eye(6)
     #Matrices Q and R
-    Qo = np.diag([1, 1, 1, 1, 1, 1])*5.0
-    Ro = np.diag([1, 1, 1])*0.5
+    Qo = np.diag([8.1, 8.5, 1.1, 0.5, 0.5, 0.5])*1.2
+    Ro = np.diag([1, 1, 1])*2.8
     
     def __init__(self):
 
@@ -327,7 +327,7 @@ class Controller:
         B[3,0] = 1/self.Ixx
         B[4,1] = 1/self.Iyy
         B[5,2] = 1/self.Izz
-        Q = np.diag([0.98, 0.5, 0.98, 0.5, 1, 0.5])*1.2
+        Q = np.diag([8.1, 8.5, 1.1, 0.5, 0.5, 0.5])*1.2
         R = np.diag([1, 1, 1])*2.8
         P = solve_lqr(A, B, Q, R)
         K = inv(R)@B.T@P
